@@ -1,11 +1,12 @@
+
+[README (7).md](https://github.com/user-attachments/files/25927254/README.7.md)
 # 🔥 AI Red Team Toolkit
 **Open-source offensive security tools for AI systems**  
 By [Cinder Security](https://cindersecurity.io) — AI Red Team as a Service
 
-[![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
-[![Twitter](https://img.shields.io/badge/twitter-@CinderSecurity-orange.svg)](https://twitter.com/CinderSecurity)
-[![Python](https://img.shields.io/badge/python-3.9+-orange.svg)]()
-[![Status](https://img.shields.io/badge/status-active-brightgreen.svg)]()
+[![License](https://img.shields.io/badge/license-MIT-red.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10+-orange.svg)](https://python.org)
+[![Status](https://img.shields.io/badge/status-active%20research-red.svg)]()
 
 ---
 
@@ -23,30 +24,46 @@ This toolkit is not theoretical. These are vulnerabilities discovered and respon
 
 | # | Target | Type | Severity | Status |
 |---|--------|------|----------|--------|
-| CSR-2026-001 | I'AM Chat — Mexico's first sovereign AI (IAMEX) | Memory Poisoning + Privilege Escalation | 🔴 Critical | Disclosed to vendor |
-| CSR-2026-002 | ModelEngine fit-framework (Huawei ecosystem) | SSRF via LangChain `RequestsGetTool` | 🔴 Critical | Vendor confirmed — patch in progress |
+| CSR-2026-002 | ModelEngine fit-framework (Huawei ecosystem) | SSRF via LangChain RequestsGetTool | 🔴 Critical | Vendor confirmed — patch live |
 | CSR-2026-003 | Insightify | Azure OpenAI credential exposure + RCE via `allow_dangerous_code=True` | 🔴 Critical | Disclosure in progress |
-| CSR-2026-004 | Tabular-QA Server | Natural language SQL injection → `DROP TABLE` execution | 🔴 Critical | Disclosure in progress |
+| CSR-2026-004 | Tabular-QA Server | Natural language SQL injection → DROP TABLE execution | 🔴 Critical | Disclosure in progress |
+| CSR-2026-007 | LangGraph / LangChain | Indirect prompt injection via RAG pipeline poisoning | 🟠 High — CVSS 7.6 | Public advisory — [GHSA-4fpw-hjmg-x4qr](https://github.com/advisories/GHSA-4fpw-hjmg-x4qr) |
 
-### CSR-2026-001 — I'AM Chat (IAMEX)
-- **Vector:** Memory Poisoning with identity spoofing across persistent memory sessions
-- **Methodology:** Based on CIBER (2026) and MemoryGraft (2025) academic frameworks
-- **Impact:** False identity planted in persistent memory → privileged access escalation
-- **Technique:** 3 plain-text messages. No code. No exploits. Pure natural language.
+---
 
 ### CSR-2026-002 — ModelEngine fit-framework
+
 - **File:** `framework/fel/python/plugins/fel_langchain_tools/langchain_tools.py`
-- **Vector:** `RequestsGetTool` instantiated with `allow_dangerous_requests=True` without URL filtering
-- **Impact:** Prompt injection → SSRF → Cloud Metadata exfiltration (IAM tokens on AWS/Alibaba Cloud)
+- **Vector:** `RequestsGetTool` instantiated with `allow_dangerous_requests=True` and no URL filtering
+- **Impact:** Prompt injection → SSRF → Cloud metadata exfiltration (IAM tokens on AWS / Alibaba Cloud)
 - **Vendor response:** Confirmed receipt within 24 hours. Patch in progress.
 
+---
+
 ### CSR-2026-003 — Insightify
-- **Vector:** Azure OpenAI API credentials exposed in plaintext + `allow_dangerous_code=True` enabled
+
+- **Vector:** Azure OpenAI API credentials exposed in plaintext config + `allow_dangerous_code=True` enabled
 - **Impact:** API identity theft + arbitrary code execution on host server
 
+---
+
 ### CSR-2026-004 — Tabular-QA Server
+
 - **Vector:** SQL agent with write permissions + `json_to_sql` function executing `DROP TABLE` by design
-- **Impact:** Total database destruction via natural language injection
+- **Impact:** Total database destruction via natural language injection — no SQL knowledge required
+
+---
+
+### CSR-2026-007 — LangGraph / LangChain
+
+- **Advisory:** [GHSA-4fpw-hjmg-x4qr](https://github.com/advisories/GHSA-4fpw-hjmg-x4qr)
+- **CVSS (Cinder):** `CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:H/A:N` — **7.6 High**
+- **Vector:** A single poisoned document in a LangChain vector store hijacks a ReAct agent's tool calls via indirect prompt injection
+- **Impact:** Persistent instruction injection across agent sessions — no code execution, no special privileges required. The agent follows attacker instructions as if they were system-level commands.
+- **Technique:** Attacker embeds an instruction payload inside a vector store document. When the RAG pipeline retrieves it, the ReAct agent executes the instruction verbatim.
+- **Root cause:** LangChain's tutorial-promoted pattern composes `ReAct` + `VectorStoreRetrieverTool` with no sanitization layer between retrieved content and LLM context.
+- **Vendor position:** Behavior is by design (attacker needs vector store access). Cinder position: official tutorials promote insecure-by-default composition with no security warnings.
+- **Credit:** Reported by Cinder Security (Esteban Ramos).
 
 ---
 
@@ -57,9 +74,10 @@ This toolkit is not theoretical. These are vulnerabilities discovered and respon
 | Prompt Injection | Direct and indirect prompt injection testing | 🔨 In Progress |
 | Jailbreak Testing | Multi-turn psychological and single-turn jailbreak assessment | 🔨 In Progress |
 | System Prompt Extraction | Techniques to extract hidden system prompts via behavioral mapping | 🔨 In Progress |
-| RAG Poisoning | Testing RAG pipelines for document injection and memory drift attacks | 🔨 In Progress |
-| Memory Poisoning | Persistent compromise of LLM agent memory via poisoned experience retrieval | ✅ Documented (CSR-2026-001) |
+| RAG Poisoning | Testing RAG pipelines for document injection and memory drift attacks | ✅ Documented (CSR-2026-007) |
 | SSRF via LLM Agents | Exploiting dangerous tool configurations in LangChain agents | ✅ Documented (CSR-2026-002) |
+| Credential Exposure | AI repos exposing API keys and cloud credentials | ✅ Documented (CSR-2026-003) |
+| SQL Injection via NL | SQL agent abuse through natural language prompts | ✅ Documented (CSR-2026-004) |
 | Data Exfiltration | Testing AI agents for data leak vulnerabilities | 📋 Planned |
 | Tool/Function Abuse | Exploiting AI agent tool-calling capabilities | 🔨 In Progress |
 | Code Interpreter Attacks | Prompt injection, backdoors, and memory poisoning against code agents | 📋 Planned |
@@ -76,9 +94,8 @@ ai-red-team-toolkit/
 │   ├── prompt_injection/     # Prompt injection payloads and testers
 │   ├── jailbreak/            # Jailbreak techniques (HPM, multi-turn)
 │   ├── extraction/           # System prompt and model extraction
-│   ├── rag_poisoning/        # RAG pipeline attack tools
-│   ├── memory_poisoning/     # Agent memory compromise (MemoryGraft)
-│   ├── ssrf/                 # SSRF via LangChain tool abuse
+│   ├── rag_poisoning/        # RAG pipeline attack tools  ← CSR-2026-007
+│   ├── ssrf/                 # SSRF via LangChain tool abuse  ← CSR-2026-002
 │   ├── code_interpreter/     # Code agent security testing (CIBER)
 │   └── exfiltration/         # Data exfiltration via AI agents
 ├── payloads/                 # Curated payload libraries
@@ -118,6 +135,7 @@ This toolkit is grounded in peer-reviewed academic research. We track the cuttin
 | Fine-Tuning Jailbreaks | Li, Wang & Li, 2025 | Three-pronged attack via data poisoning + backdoors through fine-tuning APIs | 97% ASR on GPT-4.1/4o for just $6 in compute |
 | CIBER Benchmark | Ba, Li & Li, 2026 | Comprehensive security evaluation framework for Code Interpreter agents | 73.3% ASR via Memory Poisoning. Code Descriptions bypass defenses at 62.5% ASR |
 | MemoryGraft | Srivastava & He, 2025 | Persistent compromise of LLM agents via poisoned experience retrieval in RAG memory | 47.9% retrieval drift with only 10 poisoned seeds. Trigger-free, persists across sessions |
+| AutoElicit | Anthropic / External, 2026 | Automated elicitation of harmful capabilities via adversarial prompting | 93.3% ASR on Claude Opus, 72.5% on Haiku |
 
 ### Attack Taxonomy
 
@@ -125,25 +143,24 @@ This toolkit is grounded in peer-reviewed academic research. We track the cuttin
 AI Attack Surface
 ├── Prompt-Level (Transient)
 │   ├── Direct Prompt Injection
-│   ├── Indirect Prompt Injection
-│   └── Psychological Manipulation (HPM) ← 88.1% ASR
+│   ├── Indirect Prompt Injection  ← Documented: CSR-2026-007 (LangGraph RAG)
+│   └── Psychological Manipulation (HPM)  ← 88.1% ASR
 │
 ├── Model-Level (Permanent)
-│   ├── Fine-Tuning Backdoors ← 97% ASR, $6
+│   ├── Fine-Tuning Backdoors  ← 97% ASR, $6
 │   └── Data Poisoning
 │
 ├── Memory-Level (Persistent)
-│   ├── RAG Knowledge Poisoning
-│   ├── Agent Memory Poisoning (MemoryGraft) ← 47.9% drift
-│   └── Experience Store Contamination ← Documented: CSR-2026-001
+│   ├── RAG Knowledge Poisoning  ← Documented: CSR-2026-007
+│   └── Experience Store Contamination
 │
 ├── Infrastructure-Level (Systemic)
-│   ├── SSRF via Dangerous Tool Configs ← Documented: CSR-2026-002
-│   ├── Credential Exposure in AI Repos ← Documented: CSR-2026-003
-│   └── SQL Injection via Natural Language ← Documented: CSR-2026-004
+│   ├── SSRF via Dangerous Tool Configs  ← Documented: CSR-2026-002
+│   ├── Credential Exposure in AI Repos  ← Documented: CSR-2026-003
+│   └── SQL Injection via Natural Language  ← Documented: CSR-2026-004
 │
 └── Agent-Level (Systemic)
-    ├── Code Interpreter Exploitation (CIBER) ← 73.3% ASR
+    ├── Code Interpreter Exploitation (CIBER)  ← 73.3% ASR
     ├── Tool/Function Abuse
     └── Multi-Agent Propagation
 ```
@@ -184,7 +201,7 @@ Cinder Security provides **AI Red Team as a Service** — offensive security tes
 
 🌐 [cindersecurity.io](https://cindersecurity.io)  
 🐦 [@CinderSecurity](https://twitter.com/CinderSecurity)  
-📧 contact@cindersecurity.io
+📧 [contact@cindersecurity.io](mailto:contact@cindersecurity.io)
 
 ---
 
