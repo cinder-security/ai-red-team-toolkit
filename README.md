@@ -1,208 +1,289 @@
+[README_Cinder_Security_Fracture_Final.md](https://github.com/user-attachments/files/28379160/README_Cinder_Security_Fracture_Final.md)
+# Cinder Security — AI Red Team Research
 
-[README (7).md](https://github.com/user-attachments/files/25927254/README.7.md)
-# 🔥 AI Red Team Toolkit
-**Open-source offensive security tools for AI systems**  
-By [Cinder Security](https://cindersecurity.io) — AI Red Team as a Service
+**Offensive AI security for the Intelligence Age.**  
+**Built in Zapopan, Mexico. Focused on LLMs, AI agents, RAG pipelines, memory systems, and AI supply chains.**
 
-[![License](https://img.shields.io/badge/license-MIT-red.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.10+-orange.svg)](https://python.org)
-[![Status](https://img.shields.io/badge/status-active%20research-red.svg)]()
+> A cinder is an ember that keeps burning when everyone thinks the fire is out.  
+> We find what is still burning inside production AI systems.
 
----
-
-## What is this?
-
-`ai-red-team-toolkit` is a collection of open-source tools for testing the security of AI systems — LLMs, chatbots, AI agents, RAG pipelines, and agentic memory systems. Built by practitioners, for practitioners.
-
-The AI security landscape is evolving fast. New attack vectors emerge weekly, yet most organizations deploying AI have zero offensive testing in place. This toolkit helps bridge that gap.
+[![Responsible Disclosure](https://img.shields.io/badge/Responsible%20Disclosure-Only-22c55e)](#responsible-disclosure)
+[![AI Red Team](https://img.shields.io/badge/AI%20Red%20Team-Offensive%20Security-ff6b35)](#what-we-test)
+[![Fracture](https://img.shields.io/badge/Fracture-Autonomous%20AI%20Red%20Team-ff4500)](#fracture)
+[![LATAM](https://img.shields.io/badge/Built%20in-Latin%20America-e8e6e1)](#latin-america-under-siege)
 
 ---
 
-## 🔴 Real-World Findings (2026)
+## What this is
 
-This toolkit is not theoretical. These are vulnerabilities discovered and responsibly disclosed by the Cinder Security team using the methodology in this repository.
+Cinder Security is building an offensive AI security practice for organizations deploying AI in production.
 
-| # | Target | Type | Severity | Status |
-|---|--------|------|----------|--------|
-| CSR-2026-002 | ModelEngine fit-framework (Huawei ecosystem) | SSRF via LangChain RequestsGetTool | 🔴 Critical | Vendor confirmed — patch live |
-| CSR-2026-003 | Insightify | Azure OpenAI credential exposure + RCE via `allow_dangerous_code=True` | 🔴 Critical | Disclosure in progress |
-| CSR-2026-004 | Tabular-QA Server | Natural language SQL injection → DROP TABLE execution | 🔴 Critical | Disclosure in progress |
-| CSR-2026-007 | LangGraph / LangChain | Indirect prompt injection via RAG pipeline poisoning | 🟠 High — CVSS 7.6 | Public advisory — [GHSA-4fpw-hjmg-x4qr](https://github.com/advisories/GHSA-4fpw-hjmg-x4qr) |
+This repository documents the research foundation behind our work: public security advisories, controlled adversarial evaluations, attack taxonomy, and the methodology that powers **Fracture**, our autonomous AI red-team engine.
 
----
+Our work focuses on systems where model behavior meets real infrastructure:
 
-### CSR-2026-002 — ModelEngine fit-framework
+- LLM applications and chatbots
+- Retrieval-Augmented Generation pipelines
+- AI agents with tools, memory, and planning
+- Model registries and ML supply chains
+- Prompt-mediated tool execution
+- Persistent memory and cross-session state
+- AI governance, auditability, and responsible disclosure
 
-- **File:** `framework/fel/python/plugins/fel_langchain_tools/langchain_tools.py`
-- **Vector:** `RequestsGetTool` instantiated with `allow_dangerous_requests=True` and no URL filtering
-- **Impact:** Prompt injection → SSRF → Cloud metadata exfiltration (IAM tokens on AWS / Alibaba Cloud)
-- **Vendor response:** Confirmed receipt within 24 hours. Patch in progress.
+This is not theoretical security theater. The methodology is grounded in public advisories, vendor-recognized research, and controlled adversarial evaluation.
 
 ---
 
-### CSR-2026-003 — Insightify
+## Research record
 
-- **Vector:** Azure OpenAI API credentials exposed in plaintext config + `allow_dangerous_code=True` enabled
-- **Impact:** API identity theft + arbitrary code execution on host server
+### Public advisory evidence
 
----
+| Evidence source | Target / environment | Technique demonstrated | Status |
+|---|---|---|---|
+| `GHSA-m4rw-22q2-87j8` | ModelEngine `fit-framework` | SSRF + prompt-injection composition in AI tooling | Public advisory / patch live |
+| `GHSA-4fpw-hjmg-x4qr` | LangGraph / LangChain orchestration | RAG poisoning / indirect prompt injection | Public advisory |
 
-### CSR-2026-004 — Tabular-QA Server
+### Controlled evaluation evidence
 
-- **Vector:** SQL agent with write permissions + `json_to_sql` function executing `DROP TABLE` by design
-- **Impact:** Total database destruction via natural language injection — no SQL knowledge required
+In May 2026, Cinder Security completed the AI challenge track in **Hack The Box Global Cyber Skills Benchmark CTF 2026: Project Nightfall**.
 
----
+These results are treated as **controlled-environment evidence of attack-technique viability**, not as production vulnerability claims.
 
-### CSR-2026-007 — LangGraph / LangChain
+| Environment | Challenge | Primitive demonstrated | Paper role |
+|---|---|---|---|
+| HTB GCSB 2026: Project Nightfall | Lotus Registry | ML supply-chain / model registry risk | Technique viability |
+| HTB GCSB 2026: Project Nightfall | Espionage Intelligence | RAG broken access control → credential exposure → execution path | Compositional AI-system risk |
+| HTB GCSB 2026: Project Nightfall | Bribery Compliance | Agentic tool-result spoofing / compliance bypass | Trust-boundary inversion |
 
-- **Advisory:** [GHSA-4fpw-hjmg-x4qr](https://github.com/advisories/GHSA-4fpw-hjmg-x4qr)
-- **CVSS (Cinder):** `CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:H/A:N` — **7.6 High**
-- **Vector:** A single poisoned document in a LangChain vector store hijacks a ReAct agent's tool calls via indirect prompt injection
-- **Impact:** Persistent instruction injection across agent sessions — no code execution, no special privileges required. The agent follows attacker instructions as if they were system-level commands.
-- **Technique:** Attacker embeds an instruction payload inside a vector store document. When the RAG pipeline retrieves it, the ReAct agent executes the instruction verbatim.
-- **Root cause:** LangChain's tutorial-promoted pattern composes `ReAct` + `VectorStoreRetrieverTool` with no sanitization layer between retrieved content and LLM context.
-- **Vendor position:** Behavior is by design (attacker needs vector store access). Cinder position: official tutorials promote insecure-by-default composition with no security warnings.
-- **Credit:** Reported by Cinder Security (Esteban Ramos).
+### Additional coordinated-disclosure work
 
----
-
-## Attack Vectors Covered
-
-| Vector | Description | Status |
-|--------|-------------|--------|
-| Prompt Injection | Direct and indirect prompt injection testing | 🔨 In Progress |
-| Jailbreak Testing | Multi-turn psychological and single-turn jailbreak assessment | 🔨 In Progress |
-| System Prompt Extraction | Techniques to extract hidden system prompts via behavioral mapping | 🔨 In Progress |
-| RAG Poisoning | Testing RAG pipelines for document injection and memory drift attacks | ✅ Documented (CSR-2026-007) |
-| SSRF via LLM Agents | Exploiting dangerous tool configurations in LangChain agents | ✅ Documented (CSR-2026-002) |
-| Credential Exposure | AI repos exposing API keys and cloud credentials | ✅ Documented (CSR-2026-003) |
-| SQL Injection via NL | SQL agent abuse through natural language prompts | ✅ Documented (CSR-2026-004) |
-| Data Exfiltration | Testing AI agents for data leak vulnerabilities | 📋 Planned |
-| Tool/Function Abuse | Exploiting AI agent tool-calling capabilities | 🔨 In Progress |
-| Code Interpreter Attacks | Prompt injection, backdoors, and memory poisoning against code agents | 📋 Planned |
-| Multi-Agent Attacks | Attack chains across multi-agent systems with shared memory | 📋 Planned |
-| Fine-Tuning Backdoors | Poisoning models through fine-tuning APIs at minimal cost | 📋 Planned |
+Additional findings remain under coordinated disclosure, vendor review, or final public disposition. They are intentionally excluded from this public evidence table until they can be described accurately, safely, and without ambiguity.
 
 ---
 
-## Project Structure
+## Latin America Under Siege
 
-```
-ai-red-team-toolkit/
-├── modules/
-│   ├── prompt_injection/     # Prompt injection payloads and testers
-│   ├── jailbreak/            # Jailbreak techniques (HPM, multi-turn)
-│   ├── extraction/           # System prompt and model extraction
-│   ├── rag_poisoning/        # RAG pipeline attack tools  ← CSR-2026-007
-│   ├── ssrf/                 # SSRF via LangChain tool abuse  ← CSR-2026-002
-│   ├── code_interpreter/     # Code agent security testing (CIBER)
-│   └── exfiltration/         # Data exfiltration via AI agents
-├── payloads/                 # Curated payload libraries
-├── reports/                  # Report templates for engagements
-├── docs/                     # Documentation and methodology
-│   └── research/             # Paper summaries and attack taxonomies
-└── examples/                 # Usage examples and walkthroughs
-```
+Cinder Security submitted the research proposal:
 
----
+> **Latin America Under Siege: Empirical Evidence of Active Vulnerabilities in Production AI Systems and the Absence of a Regional Audit Framework**
 
-## Quick Start
+The paper argues that Latin America is adopting AI faster than it is developing the capacity to adversarially evaluate it.
 
-```bash
-# Clone the repository
-git clone https://github.com/cinder-security/ai-red-team-toolkit.git
-cd ai-red-team-toolkit
+It proposes a regional offensive AI audit framework organized around five capabilities:
 
-# Install dependencies
-pip install -r requirements.txt
+1. **Trajectory testing** — test complete attack paths across retrieval, tools, memory, and action.
+2. **Observation authentication assessment** — determine whether agents can distinguish authentic from fabricated tool results, retrieved documents, and memory entries.
+3. **Memory-state audit** — inspect persistent conversational and operational state for poisoning, unauthorized accumulation, and cross-session risk.
+4. **Reference-implementation review** — evaluate vendor examples, sample code, and orchestration templates before they propagate into production.
+5. **Continuous disclosure translation** — convert public advisories and vulnerability records into architecture-level audit checks.
 
-# Run a basic prompt injection test
-python -m modules.prompt_injection.scanner --target <API_ENDPOINT>
-```
+The core thesis:
+
+> Latin America should not only consume AI systems.  
+> It must produce AI security evidence, standards, tools, and audit capacity.
 
 ---
 
-## Research Foundation
+## Fracture
 
-This toolkit is grounded in peer-reviewed academic research. We track the cutting edge of AI offensive security so you don't have to.
+**Fracture** is Cinder Security’s autonomous AI red-team engine.
 
-### Core Papers
+It is designed to run structured, safety-bounded offensive evaluations against authorized AI systems. Fracture tests how integrated AI applications fail when retrieval, tools, memory, prompts, and model behavior interact under adversarial pressure.
 
-| Paper | Authors | Key Finding | Impact |
-|-------|---------|-------------|--------|
-| Psychological Jailbreak (HPM) | Liu & Lin, 2025 | Multi-turn psychological manipulation exploiting LLM personality traits | 88.1% ASR across frontier models. Inverse scaling — smarter models are more vulnerable |
-| Fine-Tuning Jailbreaks | Li, Wang & Li, 2025 | Three-pronged attack via data poisoning + backdoors through fine-tuning APIs | 97% ASR on GPT-4.1/4o for just $6 in compute |
-| CIBER Benchmark | Ba, Li & Li, 2026 | Comprehensive security evaluation framework for Code Interpreter agents | 73.3% ASR via Memory Poisoning. Code Descriptions bypass defenses at 62.5% ASR |
-| MemoryGraft | Srivastava & He, 2025 | Persistent compromise of LLM agents via poisoned experience retrieval in RAG memory | 47.9% retrieval drift with only 10 poisoned seeds. Trigger-free, persists across sessions |
-| AutoElicit | Anthropic / External, 2026 | Automated elicitation of harmful capabilities via adversarial prompting | 93.3% ASR on Claude Opus, 72.5% on Haiku |
+### Core modules
 
-### Attack Taxonomy
+| Module | Purpose |
+|---|---|
+| `fingerprint` | Identify AI surface behavior, model hints, response formats, and safety posture. |
+| `extract` | Evaluate system-prompt and hidden-instruction exposure risk. |
+| `memory` | Test persistent memory, cross-session state, and poisoning behavior. |
+| `hpm` | Hierarchical Prompt Manipulation for multi-turn adversarial evaluation. |
+| `ssrf` | Evaluate prompt-mediated tool abuse and unsafe HTTP tool configurations. |
+| `retrieval_poison` | Test RAG poisoning, retrieved-context injection, and document trust boundaries. |
+| `obliteratus` | Stress-test safety logic, refusal handling, and policy boundary consistency. |
+| `campaign` | Orchestrate multi-module attack campaigns against a defined target. |
+| `shadow_replay` | Re-run historical attack traces against updated systems to validate fixes. |
 
-```
-AI Attack Surface
-├── Prompt-Level (Transient)
-│   ├── Direct Prompt Injection
-│   ├── Indirect Prompt Injection  ← Documented: CSR-2026-007 (LangGraph RAG)
-│   └── Psychological Manipulation (HPM)  ← 88.1% ASR
-│
-├── Model-Level (Permanent)
-│   ├── Fine-Tuning Backdoors  ← 97% ASR, $6
-│   └── Data Poisoning
-│
-├── Memory-Level (Persistent)
-│   ├── RAG Knowledge Poisoning  ← Documented: CSR-2026-007
-│   └── Experience Store Contamination
-│
-├── Infrastructure-Level (Systemic)
-│   ├── SSRF via Dangerous Tool Configs  ← Documented: CSR-2026-002
-│   ├── Credential Exposure in AI Repos  ← Documented: CSR-2026-003
-│   └── SQL Injection via Natural Language  ← Documented: CSR-2026-004
-│
-└── Agent-Level (Systemic)
-    ├── Code Interpreter Exploitation (CIBER)  ← 73.3% ASR
-    ├── Tool/Function Abuse
-    └── Multi-Agent Propagation
+### Methodology behind Fracture
+
+Fracture does not treat the model as the only target. It treats the deployed AI system as a composed architecture:
+
+```text
+user input
+  ↓
+prompt / policy wrapper
+  ↓
+retrieval layer
+  ↓
+tool invocation
+  ↓
+memory update
+  ↓
+action / response
+  ↓
+logs / audit evidence
 ```
 
----
-
-## Who is this for?
-
-- Security researchers testing AI systems
-- Red teamers expanding into AI attack surfaces
-- Developers building AI applications who want to test before deploying
-- CISOs and security teams evaluating AI risk
-- Bug bounty hunters targeting AI-powered features
+The unit of evaluation is the **trajectory**, not the isolated endpoint.
 
 ---
 
-## Contributing
+## What we test
 
-We welcome contributions. If you've discovered a novel attack technique, have a useful payload, or want to improve existing tools — open a PR.
+Cinder Security evaluates AI systems across the following attack surfaces:
 
-Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting.
+### Prompt and context layer
+
+- Direct prompt injection
+- Indirect prompt injection
+- RAG poisoning
+- System prompt exposure
+- Prompt-policy conflicts
+- Multi-turn jailbreak patterns
+
+### Agent and tool layer
+
+- Tool-result spoofing
+- Unsafe tool invocation
+- Agentic SSRF
+- Code interpreter exposure
+- MCP / toolchain misuse
+- ReAct-style trajectory corruption
+
+### Memory layer
+
+- Persistent memory poisoning
+- Cross-session manipulation
+- Unauthorized memory accumulation
+- Memory drift
+- State-baseline recovery risk
+
+### AI supply chain
+
+- Model registry trust boundaries
+- Unsafe model-loading patterns
+- Reference-code propagation
+- Plugin and framework misuse
+- Serialization and artifact handling risk
+
+### Governance and audit layer
+
+- OWASP LLM Top 10 mapping
+- MITRE ATLAS mapping
+- NIST AI RMF alignment
+- Evidence package generation
+- Executive-ready reporting
+- Remediation guidance
 
 ---
 
-## Responsible Disclosure
+## Why this matters
 
-This toolkit is designed for **authorized security testing only**. All tools should be used exclusively on systems you own or have explicit permission to test.
+Traditional security testing was built for endpoints, protocols, and code paths.
 
-If you discover vulnerabilities using these tools, please follow responsible disclosure practices and report them to the affected vendors.
+AI systems introduce a different class of risk:
+
+- The vulnerable object may be a reasoning trajectory.
+- The exploit may be a retrieved document.
+- The payload may persist in memory.
+- The trust boundary may be a tool result.
+- The insecure pattern may originate in reference code.
+- The system may behave exactly as designed while producing an unsafe outcome.
+
+That is why AI security needs more than static scans and generic governance checklists.
+
+It needs authorized adversarial evaluation.
 
 ---
 
-## About Cinder Security
+## Safety-bounded offensive testing
 
-Cinder Security provides **AI Red Team as a Service** — offensive security testing specifically designed for AI systems. We break AI before attackers do.
+Cinder Security’s methodology is offensive, but bounded.
 
-> 🔥 *A cinder is an ember that keeps burning when everyone thinks the fire is out. We find what's still burning in your AI systems.*
+All testing must be:
 
-🌐 [cindersecurity.io](https://cindersecurity.io)  
-🐦 [@CinderSecurity](https://twitter.com/CinderSecurity)  
-📧 [contact@cindersecurity.io](mailto:contact@cindersecurity.io)
+- **Authorized** — performed only with explicit permission.
+- **Scope-bounded** — restricted to agreed systems and assets.
+- **Data-minimizing** — no unnecessary access or exfiltration.
+- **Auditable** — every test produces reviewable evidence.
+- **Reviewable** — findings can be examined by the authorizing party.
+- **Fail-safe** — escalation stops once the finding is validated.
+
+We do not provide malicious hacking services, credential theft, unauthorized access, malware, or services intended to bypass security controls outside approved engagements.
 
 ---
 
-*Built with 🔥 by Cinder Security | Guadalajara, MX*
+## Example engagement outputs
+
+A Cinder Security assessment produces:
+
+- Executive summary
+- System boundary map
+- Attack trajectory report
+- Evidence package
+- OWASP LLM Top 10 mapping
+- MITRE ATLAS mapping
+- AI-specific severity assessment
+- Reproduction notes safe for defenders
+- Remediation guidance
+- Retest plan
+- Optional continuous monitoring plan through CinderGuard
+
+---
+
+## Who this is for
+
+- AI-native startups shipping agents, RAG systems, and generative AI features
+- Security teams responsible for AI deployment risk
+- CISOs evaluating AI governance and audit readiness
+- Engineering teams integrating LLMs into production workflows
+- Bug bounty and responsible-disclosure programs receiving AI-specific reports
+- Public-sector institutions exploring AI systems near sensitive data or decision-making
+
+---
+
+## CinderGuard
+
+**CinderGuard** is Cinder Security’s continuous AI red-team service.
+
+It combines Fracture campaigns, manual review, and recurring executive reporting to test production AI systems as they evolve.
+
+CinderGuard is designed for organizations that need recurring assurance over:
+
+- Agent updates
+- Prompt changes
+- New tools
+- Retrieval corpus changes
+- Memory behavior
+- Model version changes
+- Reference-code integration
+- New deployment environments
+
+AI systems are not static after launch. Their risk profile changes with every new prompt, retrieval corpus, memory entry, tool, and model update.
+
+---
+
+## Responsible disclosure
+
+This research is intended for authorized testing and defensive improvement.
+
+If a vulnerability is discovered in a third-party system, Cinder Security follows responsible disclosure practices and coordinates with the affected vendor or program before publication.
+
+Operational exploit payloads and unsafe reproduction details are intentionally omitted from public materials when disclosure or safety considerations require it.
+
+---
+
+## Contact
+
+**Cinder Security**  
+AI Red Team as a Service  
+Zapopan, Mexico
+
+- Website: [https://cindersecurity.io](https://cindersecurity.io)
+- Email: [contact@cindersecurity.io](mailto:contact@cindersecurity.io)
+- GitHub: [https://github.com/cinder-security](https://github.com/cinder-security)
+
+---
+
+Built with fire by Cinder Security.
+
